@@ -10,7 +10,7 @@ import settingsRoutes from "./routes/settings.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5008;
+const PORT = 5008;
 
 // Middleware
 app.use(cors());
@@ -37,7 +37,7 @@ app.use((err, req, res, next) => {
 async function startServer() {
   try {
     await initDB();
-    app.listen(PORT, () => {
+    app.listen(PORT, '127.0.0.1', () => {
       console.log(`🚀 FinTrack API Server running on port ${PORT}`);
     });
   } catch (err) {
