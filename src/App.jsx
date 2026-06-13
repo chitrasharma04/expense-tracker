@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
@@ -265,7 +265,6 @@ function AppShell() {
   const { user, updateUser } = useAuth();
   const toast = useToast();
 
-  // --------------------------------------------------------------
   // Fresh‑start logic for demo user – clears demo transactions on login
   // --------------------------------------------------------------
   useEffect(() => {
@@ -282,7 +281,7 @@ function AppShell() {
         }
       })();
     }
-  }, [user]);
+  }, [user?.email]);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [collapsed, setCollapsed] = useState(window.innerWidth <= 1024);
   const [page, setPage] = useState("dashboard");
@@ -329,22 +328,21 @@ function AppShell() {
     }
 
     loadData();
-  }, [user, toast]);
+  }, [user?.id, toast]);
 
-  // Sync theme setting from DB on user change / login
+  // Sync theme setting safely to avoid infinite loops
   const { dark, setDarkTheme } = useTheme();
-  useEffect(() => {
-    if (user && user.theme) {
-      const isUserDark = user.theme === "dark";
-      if (dark !== isUserDark) {
-        setDarkTheme(isUserDark);
-      }
-    }
-  }, [user]);
+  const isInitialMount = useRef(true);
 
-  // Sync theme setting to DB when dark state changes locally
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+    
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (user.theme) {
+        setDarkTheme(user.theme === "dark");
+      }
+    } else {
       const currentTheme = dark ? "dark" : "light";
       if (user.theme !== currentTheme) {
         updateUser({ theme: currentTheme });
@@ -355,7 +353,7 @@ function AppShell() {
         }).catch(err => console.error("Failed to sync theme preference:", err));
       }
     }
-  }, [dark, user, updateUser]);
+  }, [dark, user?.theme]);
 
   // Currency formats resolver
   const formatCurrency = getCurrencyFormatter(user?.currency || "INR");
